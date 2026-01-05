@@ -6,6 +6,7 @@ from .models import Product
 from .forms import ProductForm
 from .serializers import ProductSerializer
 
+
 def product_page(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -17,12 +18,7 @@ def product_page(request):
 
     products = Product.objects.all()
     return render(
-        request,
-        "catalogue/products.html",
-        {
-            "products": products,
-            "form": form
-        }
+        request, "catalogue/products.html", {"products": products, "form": form}
     )
 
 
@@ -32,14 +28,15 @@ def delete_product(request, pk):
         product.delete()
     return redirect("/")
 
-@api_view(['GET', 'POST'])
+
+@api_view(["GET", "POST"])
 def product_list_create(request):
-    if request.method == 'GET':
+    if request.method == "GET":
         products = Product.objects.all()
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -47,28 +44,24 @@ def product_list_create(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(["GET", "PUT", "DELETE"])
 def product_detail(request, pk):
     try:
         product = Product.objects.get(pk=pk)
     except Product.DoesNotExist:
-        return Response(
-            {"detail": "Not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'GET':
+    if request.method == "GET":
         serializer = ProductSerializer(product)
         return Response(serializer.data)
 
-    if request.method == 'PUT':
+    if request.method == "PUT":
         serializer = ProductSerializer(product, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    if request.method == 'DELETE':
+    if request.method == "DELETE":
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    

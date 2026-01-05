@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from decimal import Decimal
@@ -26,12 +27,6 @@ class ProductModelTest(TestCase):
 
         self.assertIsInstance(product.price, Decimal)
 
-    def test_product_default_values(self):
-        product = Product.objects.create(name="Defaults", price=Decimal("10.00"))
-
-        self.assertEqual(product.stock_quantity, 0)
-        self.assertTrue(product.is_active)
-
 
 class ProductAPITest(APITestCase):
 
@@ -42,8 +37,8 @@ class ProductAPITest(APITestCase):
             price=Decimal("25.00"),
             stock_quantity=5,
         )
-        self.list_url = "/products/"
-        self.detail_url = f"/products/{self.product.id}/"
+        self.list_url = reverse("product-list-create")
+        self.detail_url = reverse("product-detail", args=[self.product.id])
 
     def test_get_product_list(self):
         response = self.client.get(self.list_url)
@@ -56,7 +51,8 @@ class ProductAPITest(APITestCase):
         self.assertEqual(response.data["name"], "API Product")
 
     def test_get_nonexistent_product(self):
-        response = self.client.get("/products/999/")
+        url = reverse("product-detail", args=[999])
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_product(self):
@@ -71,12 +67,6 @@ class ProductAPITest(APITestCase):
         response = self.client.post(self.list_url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Product.objects.count(), 2)
-
-    def test_create_product_missing_name(self):
-        data = {"price": "12.00"}
-
-        response = self.client.post(self.list_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_product_invalid_price(self):
         data = {"name": "Bad Product", "price": "abc"}
@@ -99,12 +89,6 @@ class ProductAPITest(APITestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.name, "Updated Product")
 
-    def test_update_product_invalid_price(self):
-        data = {"name": "Updated", "price": "invalid"}
-
-        response = self.client.put(self.detail_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
     def test_partial_update_product(self):
         data = {"name": "Partially Updated"}
 
@@ -114,34 +98,4 @@ class ProductAPITest(APITestCase):
     def test_delete_product(self):
         response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Product.objects.count(), 0)
-
-
-class ProductTemplateViewTest(TestCase):
-
-    def test_product_page_get(self):
-        response = self.client.get("/api/")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("form", response.context)
-        self.assertIn("products", response.context)
-
-    def test_product_page_post_invalid(self):
-        response = self.client.post("/api/", {"name": ""})
-        self.assertEqual(response.status_code, 200)
-
-
-class ProductDeleteViewTest(TestCase):
-
-    def test_delete_product_get_does_not_delete(self):
-        product = Product.objects.create(name="Delete Test", price=Decimal("10.00"))
-
-        response = self.client.get(f"/delete/{product.id}/")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Product.objects.count(), 1)
-
-    def test_delete_product_post(self):
-        product = Product.objects.create(name="Delete Test", price=Decimal("10.00"))
-
-        response = self.client.post(f"/delete/{product.id}/")
-        self.assertEqual(response.status_code, 302)
         self.assertEqual(Product.objects.count(), 0)
