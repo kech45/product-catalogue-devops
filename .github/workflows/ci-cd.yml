@@ -20,6 +20,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          CI: "true"
           POSTGRES_DB: test_db
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
@@ -89,7 +90,7 @@ jobs:
 
   # STEP 4: SAST (Security Scanning)
   sast:
-    name: SAST - Security Scan
+    name: SAST - Security Scan (Bandit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
