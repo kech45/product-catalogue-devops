@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalogue
+  namespace: product-catalogue
+  labels:
+    app: product-catalogue
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: product-catalogue
+  template:
+    metadata:
+      labels:
+        app: product-catalogue
+    spec:
+      initContainers:
+      - name: migrate
+        image: keroh45/product-catalogue:latest
+        command: ["python", "manage.py", "migrate"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: product-catalogue-secret
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: product-catalogue-secret
+              key: SECRET_KEY
+
+      containers:
+      - name: product-catalogue
+        image: keroh45/product-catalogue:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: product-catalogue-secret
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: product-catalogue-secret
+              key: SECRET_KEY
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: product-catalogue-config
+              key: DEBUG
+        - name: ALLOWED_HOSTS
+          valueFrom:
+            configMapKeyRef:
+              name: product-catalogue-config
+              key: ALLOWED_HOSTS
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 5
