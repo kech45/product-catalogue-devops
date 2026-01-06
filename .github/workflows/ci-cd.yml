@@ -129,6 +129,10 @@ jobs:
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Debug DOCKER_IMAGE
+        run: |
+          echo "DOCKER_IMAGE='${{ env.DOCKER_IMAGE }}'"
       
       - name: Build Docker image
         run: |
@@ -143,10 +147,6 @@ jobs:
         with:
           name: docker-image
           path: image.tar
-
-      - name: Debug DOCKER_IMAGE
-        run: |
-          echo "DOCKER_IMAGE='${{ env.DOCKER_IMAGE }}'"
 
   # STEP 6: Scan vulnerabilities
   scan-vulnerabilities:
