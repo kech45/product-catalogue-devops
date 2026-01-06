@@ -205,4 +205,30 @@ jobs:
         run: |
           python manage.py migrate --plan
 
+  # STEP 8: Push to Container Registry
+  push-to-registry:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [build-docker, scan-vulnerabilities, test-migrations]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+      
+      - name: Load Docker image
+        run: docker load -i image.tar
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.DOCKER_IMAGE }}:latest
+
 
