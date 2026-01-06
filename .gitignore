@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 venv/
 .env
+.coverage
 
 db.sqlite3
 staticfiles/
@@ -19,5 +20,6 @@ Thumbs.db
 .idea/
 
 .pytest_cache/
+
 
 
