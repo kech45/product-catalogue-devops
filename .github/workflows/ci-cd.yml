@@ -144,6 +144,10 @@ jobs:
           name: docker-image
           path: image.tar
 
+      - name: Debug DOCKER_IMAGE
+        run: |
+          echo "DOCKER_IMAGE='${{ env.DOCKER_IMAGE }}'"
+
   # STEP 6: Scan vulnerabilities
   scan-vulnerabilities:
     name: Scan Docker Image (Trivy)
