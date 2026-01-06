@@ -242,37 +242,29 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
         with:
           kubectl-version: 'latest'
 
-      - name: Set up kubeconfig
+      - name: Authenticate to GCP (or AWS)
         run: |
-          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig
-          export KUBECONFIG=kubeconfig
+          echo "${{ secrets.GCP_CREDENTIALS }}" | gcloud auth activate-service-account --key-file=-
+          gcloud container clusters get-credentials my-cluster --zone us-central1-a --project my-project
 
       - name: Create Kubernetes Secrets
         run: |
           kubectl create secret generic product-catalogue-secret \
-            --namespace=product-catalogue \
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Update Kubernetes deployment with new image
+      - name: Update deployment with new image
         run: |
-          echo "Updating Kubernetes deployment with image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}"
-          kubectl set image deployment/product-catalogue product-catalogue=${{ env.DOCKER_IMAGE }}:${{ github.sha }} -n product-catalogue
+          kubectl set image deployment/product-catalogue product-catalogue=${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
-      - name: Wait for deployment to complete
+      - name: Wait for deployment
         run: |
-          kubectl rollout status deployment/product-catalogue -n product-catalogue
-
-      - name: Deployment summary
-        run: |
-          echo "Pipeline completed successfully!"
-          echo "Docker image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}"
-          echo "Deployment completed to Kubernetes cluster!"
+          kubectl rollout status deployment/product-catalogue
